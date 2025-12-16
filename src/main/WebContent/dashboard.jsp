@@ -12,6 +12,8 @@
     List<Map<String, Object>> courses = (List<Map<String, Object>>) request.getAttribute("courses");
     List<Map<String, Object>> assignments = (List<Map<String, Object>>) request.getAttribute("assignments");
     List<Map<String, Object>> exams = (List<Map<String, Object>>) request.getAttribute("exams");
+    String successMessage = (String) request.getAttribute("successMessage");
+    String errorMessage = (String) request.getAttribute("errorMessage");
     
     if (courses == null) courses = new ArrayList<>();
     if (assignments == null) assignments = new ArrayList<>();
@@ -79,6 +81,37 @@
             max-width: 1200px;
             margin: 40px auto;
             padding: 0 20px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            animation: slideDown 0.3s ease;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .welcome-section {
@@ -173,6 +206,22 @@
             background: #e0e0e0;
         }
 
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+
+        .btn-delete:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -245,8 +294,19 @@
                 width: 100%;
                 text-align: center;
             }
+
+            table {
+                font-size: 0.9em;
+            }
         }
     </style>
+    <script>
+        function confirmDelete(type, id, name) {
+            if (confirm('Are you sure you want to delete "' + name + '"?\n\nThis action cannot be undone.')) {
+                document.getElementById('deleteForm' + type + id).submit();
+            }
+        }
+    </script>
 </head>
 <body>
     <header>
@@ -258,6 +318,15 @@
     </header>
 
     <div class="container">
+        <!-- Success/Error Messages -->
+        <% if (successMessage != null) { %>
+            <div class="alert alert-success">✓ <%= successMessage %></div>
+        <% } %>
+        
+        <% if (errorMessage != null) { %>
+            <div class="alert alert-error">✗ <%= errorMessage %></div>
+        <% } %>
+
         <!-- Welcome Section -->
         <div class="welcome-section">
             <h2>Your Academic Overview</h2>
@@ -298,6 +367,7 @@
                             <th>Credits</th>
                             <th>Semester</th>
                             <th>Instructor</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -308,6 +378,15 @@
                                 <td><%= course.get("credits") %></td>
                                 <td><%= course.get("semester") %></td>
                                 <td><%= course.get("instructor") != null ? course.get("instructor") : "N/A" %></td>
+                                <td>
+                                    <form id="deleteFormCourse<%= course.get("id") %>" method="POST" action="deleteCourse" style="display: inline;">
+                                        <input type="hidden" name="courseId" value="<%= course.get("id") %>">
+                                        <button type="button" class="btn-delete" 
+                                                onclick="confirmDelete('Course', <%= course.get("id") %>, '<%= course.get("code") %>')">
+                                            🗑️ Delete
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         <% } %>
                     </tbody>
@@ -333,6 +412,7 @@
                             <th>Due Date</th>
                             <th>Weightage</th>
                             <th>Est. Hours</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -343,6 +423,15 @@
                                 <td><%= dateTimeFormat.format(assignment.get("dueDate")) %></td>
                                 <td><span class="badge badge-pending"><%= assignment.get("weightage") %>%</span></td>
                                 <td><%= assignment.get("estimatedHours") %> hrs</td>
+                                <td>
+                                    <form id="deleteFormAssignment<%= assignment.get("id") %>" method="POST" action="deleteAssignment" style="display: inline;">
+                                        <input type="hidden" name="assignmentId" value="<%= assignment.get("id") %>">
+                                        <button type="button" class="btn-delete" 
+                                                onclick="confirmDelete('Assignment', <%= assignment.get("id") %>, '<%= assignment.get("title") %>')">
+                                            🗑️ Delete
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         <% } %>
                     </tbody>
@@ -369,6 +458,7 @@
                             <th>Type</th>
                             <th>Weightage</th>
                             <th>Study Hours</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -380,6 +470,15 @@
                                 <td><span class="badge badge-urgent"><%= exam.get("type") %></span></td>
                                 <td><%= exam.get("weightage") %>%</td>
                                 <td><%= exam.get("estimatedStudyHours") %> hrs</td>
+                                <td>
+                                    <form id="deleteFormExam<%= exam.get("id") %>" method="POST" action="deleteExam" style="display: inline;">
+                                        <input type="hidden" name="examId" value="<%= exam.get("id") %>">
+                                        <button type="button" class="btn-delete" 
+                                                onclick="confirmDelete('Exam', <%= exam.get("id") %>, '<%= exam.get("name") %>')">
+                                            🗑️ Delete
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         <% } %>
                     </tbody>
