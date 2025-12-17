@@ -66,6 +66,7 @@ public class DatabaseManager {
             course.put("semester", rs.getString("semester"));
             course.put("instructor", rs.getString("instructor"));
             course.put("scheduleDays", rs.getString("schedule_days"));
+            course.put("syllabusPath", rs.getString("syllabus_path")); 
             courses.add(course);
         }
         
@@ -138,10 +139,11 @@ public class DatabaseManager {
     }
 
     // Add new course
+    // Add new course with optional syllabus
     public static int addCourse(int userId, String code, String name, int credits, 
-                               String semester, String instructor, String scheduleDays) 
+                               String semester, String instructor, String scheduleDays, String syllabusPath) 
             throws SQLException {
-    	if (code == null || code.trim().isEmpty() || code.length() > 20) {
+        if (code == null || code.trim().isEmpty() || code.length() > 20) {
             throw new SQLException("Invalid course code");
         }
         if (name == null || name.trim().isEmpty() || name.length() > 200) {
@@ -150,11 +152,12 @@ public class DatabaseManager {
         if (credits < 1 || credits > 10) {
             throw new SQLException("Credits must be between 1 and 10");
         }
+        
         DatabaseManager manager = new DatabaseManager();
         Connection conn = manager.getConnection();
         
-        String query = "INSERT INTO courses (user_id, course_code, course_name, credits, semester, instructor, schedule_days) " +
-                      "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String query = "INSERT INTO courses (user_id, course_code, course_name, credits, semester, instructor, schedule_days, syllabus_path) " +
+                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         PreparedStatement ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
         ps.setInt(1, userId);
         ps.setString(2, code);
@@ -163,6 +166,7 @@ public class DatabaseManager {
         ps.setString(5, semester);
         ps.setString(6, instructor);
         ps.setString(7, scheduleDays);
+        ps.setString(8, syllabusPath);  // ADD THIS
         
         int result = ps.executeUpdate();
         int courseId = -1;
@@ -178,6 +182,7 @@ public class DatabaseManager {
         conn.close();
         return courseId;
     }
+
     // Add new assignment
     public static int addAssignment(int courseId, String title, Timestamp dueDate, 
                                    int weightage, int estimatedHours, String description) 
@@ -421,5 +426,66 @@ public class DatabaseManager {
         conn.close();
         return result > 0;
     }
+ // Update course to add/replace syllabus path
+    public static boolean updateCourseSyllabus(int courseId, int userId, String syllabusPath) 
+            throws SQLException {
+        DatabaseManager manager = new DatabaseManager();
+        Connection conn = manager.getConnection();
+        
+        // Verify the course belongs to the user
+        String verifyQuery = "SELECT user_id FROM courses WHERE id = ?";
+        PreparedStatement verifyPs = conn.prepareStatement(verifyQuery);
+        verifyPs.setInt(1, courseId);
+        ResultSet rs = verifyPs.executeQuery();
+        
+        if (!rs.next() || rs.getInt("user_id") != userId) {
+            verifyPs.close();
+            conn.close();
+            return false;
+        }
+        
+        String query = "UPDATE courses SET syllabus_path = ? WHERE id = ? AND user_id = ?";
+        PreparedStatement ps = conn.prepareStatement(query);
+        ps.setString(1, syllabusPath);
+        ps.setInt(2, courseId);
+        ps.setInt(3, userId);
+        
+        int result = ps.executeUpdate();
+        
+        ps.close();
+        verifyPs.close();
+        conn.close();
+        return result > 0;
+    }
+
+    // Get course by ID
+    public static Map<String, Object> getCourseById(int courseId, int userId) 
+            throws SQLException {
+        DatabaseManager manager = new DatabaseManager();
+        Connection conn = manager.getConnection();
+        
+        String query = "SELECT * FROM courses WHERE id = ? AND user_id = ?";
+        PreparedStatement ps = conn.prepareStatement(query);
+        ps.setInt(1, courseId);
+        ps.setInt(2, userId);
+        ResultSet rs = ps.executeQuery();
+        
+        Map<String, Object> course = new HashMap<>();
+        if (rs.next()) {
+            course.put("id", rs.getInt("id"));
+            course.put("code", rs.getString("course_code"));
+            course.put("name", rs.getString("course_name"));
+            course.put("credits", rs.getInt("credits"));
+            course.put("semester", rs.getString("semester"));
+            course.put("instructor", rs.getString("instructor"));
+            course.put("scheduleDays", rs.getString("schedule_days"));
+            course.put("syllabusPath", rs.getString("syllabus_path"));
+        }
+        
+        ps.close();
+        conn.close();
+        return course;
+    }
+
 
 }

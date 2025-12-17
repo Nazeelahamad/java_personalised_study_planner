@@ -300,6 +300,40 @@
             table {
                 font-size: 0.9em;
             }
+            .btn-view-syllabus {
+		    color: #667eea;
+		    text-decoration: none;
+		    font-weight: 600;
+		    padding: 6px 12px;
+		    border-radius: 4px;
+		    background: #e8f0fe;
+		    display: inline-block;
+		    transition: all 0.3s;
+		}
+		
+		.btn-view-syllabus:hover {
+		    background: #667eea;
+		    color: white;
+		    transform: scale(1.05);
+		}
+		
+		.btn-upload-syllabus {
+		    color: #f39c12;
+		    text-decoration: none;
+		    font-weight: 600;
+		    padding: 6px 12px;
+		    border-radius: 4px;
+		    background: #fef5e7;
+		    display: inline-block;
+		    transition: all 0.3s;
+		}
+		
+		.btn-upload-syllabus:hover {
+		    background: #f39c12;
+		    color: white;
+		    transform: scale(1.05);
+		}
+            
         }
     </style>
     <script>
@@ -400,49 +434,83 @@
 </div>
 
         <!-- Courses Section -->
-        <div class="section">
-            <h3>Your Courses</h3>
-            <div class="action-buttons">
-                <a href="addCourse" class="btn">+ Add New Course</a>
-            </div>
+		<div class="section">
+		    <h3>Your Courses</h3>
+		    <div class="action-buttons">
+		        <a href="addCourse" class="btn">+ Add New Course</a>
+		    </div>
+		
+		    <% if (courses.isEmpty()) { %>
+		        <div class="empty-message">No courses added yet. Start by adding your courses!</div>
+		    <% } else { %>
+		        <table>
+		            <thead>
+					    <tr>
+					        <th>Course Code</th>
+					        <th>Course Name</th>
+					        <th>Credits</th>
+					        <th>Semester</th>
+					        <th>Instructor</th>
+					        <th>Schedule</th>
+					        <th>Syllabus</th>
+					        <th>Action</th>
+					    </tr>
+					</thead>
 
-            <% if (courses.isEmpty()) { %>
-                <div class="empty-message">No courses added yet. Start by adding your courses!</div>
-            <% } else { %>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Course Code</th>
-                            <th>Course Name</th>
-                            <th>Credits</th>
-                            <th>Semester</th>
-                            <th>Instructor</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% for (Map<String, Object> course : courses) { %>
-                            <tr>
-                                <td><strong><%= course.get("code") %></strong></td>
-                                <td><%= course.get("name") %></td>
-                                <td><%= course.get("credits") %></td>
-                                <td><%= course.get("semester") %></td>
-                                <td><%= course.get("instructor") != null ? course.get("instructor") : "N/A" %></td>
-                                <td>
-                                    <form id="deleteFormCourse<%= course.get("id") %>" method="POST" action="deleteCourse" style="display: inline;">
-                                        <input type="hidden" name="courseId" value="<%= course.get("id") %>">
-                                        <button type="button" class="btn-delete" 
-                                                onclick="confirmDelete('Course', <%= course.get("id") %>, '<%= course.get("code") %>')">
-                                            🗑️ Delete
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <% } %>
-                    </tbody>
-                </table>
-            <% } %>
-        </div>
+		            <tbody>
+		                <% for (Map<String, Object> course : courses) { 
+		                    String syllabusPath = (String) course.get("syllabusPath");
+		                    boolean hasSyllabus = syllabusPath != null && !syllabusPath.isEmpty();
+		                %>
+		                    <tr>
+							    <td><strong><%= course.get("code") %></strong></td>
+							    <td><%= course.get("name") %></td>
+							    <td><%= course.get("credits") %></td>
+							    <td><%= course.get("semester") %></td>
+							    <td><%= course.get("instructor") != null ? course.get("instructor") : "N/A" %></td>
+							    <td>
+							        <% 
+							            String scheduleDays = (String) course.get("scheduleDays");
+							            if (scheduleDays != null && !scheduleDays.isEmpty()) {
+							        %>
+							            <span style="font-size: 0.85em; color: #667eea; font-weight: 500;">
+							                📅 <%= scheduleDays %>
+							            </span>
+							        <% } else { %>
+							            <span style="color: #999; font-size: 0.85em;">Not set</span>
+							        <% } %>
+							    </td>
+							    <td>
+							        <% if (hasSyllabus) { %>
+							            <a href="viewSyllabus?path=<%= syllabusPath %>" 
+							               target="_blank" 
+							               class="btn-view-syllabus">
+							                📄 View
+							            </a>
+							        <% } else { %>
+							            <a href="uploadSyllabus?courseId=<%= course.get("id") %>" 
+							               class="btn-upload-syllabus">
+							                📤 Upload
+							            </a>
+							        <% } %>
+							    </td>
+							    <td>
+							        <form id="deleteFormCourse<%= course.get("id") %>" method="POST" action="deleteCourse" style="display: inline;">
+							            <input type="hidden" name="courseId" value="<%= course.get("id") %>">
+							            <button type="button" class="btn-delete" 
+							                    onclick="confirmDelete('Course', <%= course.get("id") %>, '<%= course.get("code") %>')">
+							                🗑️ Delete
+							            </button>
+							        </form>
+							    </td>
+							</tr>
+
+		                <% } %>
+		            </tbody>
+		        </table>
+		    <% } %>
+		</div>
+
 
         <!-- Assignments Section -->
         <div class="section">
