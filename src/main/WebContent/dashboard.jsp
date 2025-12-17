@@ -1,6 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.*" %>
 <%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.sql.*" %>
+<%@ page import="com.studyplanner.dao.DatabaseManager" %>
 <%
     // Check if user is logged in
     if (session.getAttribute("userId") == null) {
@@ -312,6 +314,8 @@
     <header>
         <h1>📚 Study Planner Dashboard</h1>
         <div class="user-info">
+        <a href="completedTasks" style="color: white; margin-right: 20px;">View Completed Tasks</a>
+       
             <span>Welcome, <strong><%= fullName != null ? fullName : "Student" %></strong>!</span>
             <a href="logout" class="btn-logout">Logout</a>
         </div>
@@ -329,25 +333,71 @@
 
         <!-- Welcome Section -->
         <div class="welcome-section">
+        <!-- <form method="POST" action="addDemoData" style="margin-top: 15px;">
+		    <button type="submit" class="btn btn-secondary">
+		        🎯 Add Demo Data (for testing)
+		    </button>
+		</form>  -->
             <h2>Your Academic Overview</h2>
             <p>Manage your courses, assignments, exams, and generate personalized study plans.</p>
         </div>
 
         <!-- Statistics Grid -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>Courses</h3>
-                <div class="number"><%= courses.size() %></div>
-            </div>
-            <div class="stat-card">
-                <h3>Pending Assignments</h3>
-                <div class="number"><%= assignments.size() %></div>
-            </div>
-            <div class="stat-card">
-                <h3>Upcoming Exams</h3>
-                <div class="number"><%= exams.size() %></div>
-            </div>
-        </div>
+        <%
+	     // Get userId from session
+	        int userId = (int) session.getAttribute("userId");
+	        
+	        // Calculate completion stats
+	        int totalAssignments = assignments.size();
+		    int totalExams = exams.size();
+		    
+		    // You'll need to get these from database
+		    DatabaseManager dbManager = new DatabaseManager();
+		    Connection statsConn = dbManager.getConnection();
+		    
+		    String completedQuery = "SELECT " +
+		        "(SELECT COUNT(*) FROM assignments a JOIN courses c ON a.course_id = c.id " +
+		        "WHERE c.user_id = ? AND a.submission_status = 'COMPLETED') as completed_assignments, " +
+		        "(SELECT COUNT(*) FROM exams e JOIN courses c ON e.course_id = c.id " +
+		        "WHERE c.user_id = ? AND e.completed = TRUE) as completed_exams";
+		    
+		    PreparedStatement statsPs = statsConn.prepareStatement(completedQuery);
+		    statsPs.setInt(1, userId);
+		    statsPs.setInt(2, userId);
+		    ResultSet statsRs = statsPs.executeQuery();
+		    
+		    int completedAssignments = 0;
+		    int completedExams = 0;
+		    if (statsRs.next()) {
+		        completedAssignments = statsRs.getInt("completed_assignments");
+		        completedExams = statsRs.getInt("completed_exams");
+		    }
+		    statsPs.close();
+		    statsConn.close();
+		    
+		    int totalTasks = totalAssignments + totalExams + completedAssignments + completedExams;
+		    int completedTasks = completedAssignments + completedExams;
+		    int completionPercentage = totalTasks > 0 ? (completedTasks * 100) / totalTasks : 0;
+		%>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>Courses</h3>
+        <div class="number"><%= courses.size() %></div>
+    </div>
+    <div class="stat-card">
+        <h3>Pending Tasks</h3>
+        <div class="number"><%= assignments.size() + exams.size() %></div>
+    </div>
+    <div class="stat-card">
+        <h3>Completed Tasks</h3>
+        <div class="number"><%= completedTasks %></div>
+    </div>
+    <div class="stat-card" style="border-left-color: #28a745;">
+        <h3>Completion Rate</h3>
+        <div class="number" style="color: #28a745;"><%= completionPercentage %>%</div>
+    </div>
+</div>
 
         <!-- Courses Section -->
         <div class="section">
@@ -423,15 +473,29 @@
                                 <td><%= dateTimeFormat.format(assignment.get("dueDate")) %></td>
                                 <td><span class="badge badge-pending"><%= assignment.get("weightage") %>%</span></td>
                                 <td><%= assignment.get("estimatedHours") %> hrs</td>
-                                <td>
-                                    <form id="deleteFormAssignment<%= assignment.get("id") %>" method="POST" action="deleteAssignment" style="display: inline;">
-                                        <input type="hidden" name="assignmentId" value="<%= assignment.get("id") %>">
-                                        <button type="button" class="btn-delete" 
-                                                onclick="confirmDelete('Assignment', <%= assignment.get("id") %>, '<%= assignment.get("title") %>')">
-                                            🗑️ Delete
-                                        </button>
-                                    </form>
-                                </td>
+                                <!-- In the Assignments table, replace the Delete button cell with: -->
+								<td>
+								    <form method="POST" action="completeTask" style="display: inline;">
+								        <input type="hidden" name="taskType" value="assignment">
+								        <input type="hidden" name="taskId" value="<%= assignment.get("id") %>">
+								        <button type="submit" class="btn-complete" 
+								                style="background: #28a745; color: white; padding: 6px 12px; 
+								                       border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;">
+								            ✓ Complete
+								        </button>
+								    </form>
+								    <form id="deleteFormAssignment<%= assignment.get("id") %>" 
+								          method="POST" action="deleteAssignment" style="display: inline;">
+								        <input type="hidden" name="assignmentId" value="<%= assignment.get("id") %>">
+								        <button type="button" class="btn-delete" 
+								                onclick="confirmDelete('Assignment', <%= assignment.get("id") %>, 
+								                        '<%= assignment.get("title") %>')">
+								            🗑️ Delete
+								        </button>
+								    </form>
+								</td>
+								
+								<!-- Do the same for Exams table -->
                             </tr>
                         <% } %>
                     </tbody>

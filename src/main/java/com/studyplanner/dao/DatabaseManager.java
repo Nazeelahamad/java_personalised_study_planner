@@ -141,6 +141,15 @@ public class DatabaseManager {
     public static int addCourse(int userId, String code, String name, int credits, 
                                String semester, String instructor, String scheduleDays) 
             throws SQLException {
+    	if (code == null || code.trim().isEmpty() || code.length() > 20) {
+            throw new SQLException("Invalid course code");
+        }
+        if (name == null || name.trim().isEmpty() || name.length() > 200) {
+            throw new SQLException("Invalid course name");
+        }
+        if (credits < 1 || credits > 10) {
+            throw new SQLException("Credits must be between 1 and 10");
+        }
         DatabaseManager manager = new DatabaseManager();
         Connection conn = manager.getConnection();
         
