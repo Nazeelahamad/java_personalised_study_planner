@@ -535,14 +535,23 @@
                                 <td><%= exam.get("weightage") %>%</td>
                                 <td><%= exam.get("estimatedStudyHours") %> hrs</td>
                                 <td>
-                                    <form id="deleteFormExam<%= exam.get("id") %>" method="POST" action="deleteExam" style="display: inline;">
-                                        <input type="hidden" name="examId" value="<%= exam.get("id") %>">
-                                        <button type="button" class="btn-delete" 
-                                                onclick="confirmDelete('Exam', <%= exam.get("id") %>, '<%= exam.get("name") %>')">
-                                            🗑️ Delete
-                                        </button>
-                                    </form>
-                                </td>
+						    <form method="POST" action="completeTask" style="display: inline;">
+						        <input type="hidden" name="taskType" value="exam">
+						        <input type="hidden" name="taskId" value="<%= exam.get("id") %>">
+						        <button type="submit" class="btn-complete" 
+						                style="background: #28a745; color: white; padding: 6px 12px; 
+						                       border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;">
+						            ✓ Complete
+						        </button>
+						    </form>
+						    <form id="deleteFormExam<%= exam.get("id") %>" method="POST" action="deleteExam" style="display: inline;">
+						        <input type="hidden" name="examId" value="<%= exam.get("id") %>">
+						        <button type="button" class="btn-delete" 
+						                onclick="confirmDelete('Exam', <%= exam.get("id") %>, '<%= exam.get("name") %>')">
+						            🗑️ Delete
+						        </button>
+						    </form>
+						</td>
                             </tr>
                         <% } %>
                     </tbody>
